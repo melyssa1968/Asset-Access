@@ -1,4 +1,3 @@
-import { get } from "@vercel/blob";
 import { getVercelOidcToken } from "@vercel/oidc";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../../../db";
@@ -22,28 +21,23 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const storeId = process.env.BLOB_STORE_ID;
   if (!oidcToken || !storeId) return new Response("File service unavailable", { status: 503 });
   const range = request.headers.get("range");
-  const object = await get(row.asset.objectKey, {
-    access: "private", oidcToken, storeId,
-    headers: range ? { Range: range } : undefined,
+  const upstream = await fetch(row.asset.objectKey, {
+    headers: {
+      Authorization: `Bearer ${oidcToken}`,
+      ...(range ? { Range: range } : {}),
+    },
   });
-  if (!object || (object.statusCode !== 200 && object.statusCode !== 206)) return new Response("File unavailable", { status: 404 });
+  if (!upstream.ok || !upstream.body) return new Response("File unavailable", { status: upstream.status === 404 ? 404 : 502 });
   const headers: Record<string,string> = {
-    "content-type": row.asset.contentType || "application/octet-stream",
+    "content-type": upstream.headers.get("content-type") || row.asset.contentType || "application/octet-stream",
     "content-disposition": `${wantsDownload ? "attachment" : "inline"}; filename="${row.asset.fileName.replaceAll('"', "")}"`,
     "cache-control": "private, no-store",
     "x-content-type-options": "nosniff",
-    "accept-ranges": "bytes",
+    "accept-ranges": upstream.headers.get("accept-ranges") || "bytes",
   };
-  let status = 200;
-  if (range && object.statusCode === 206) {
-    const match = /^bytes=(\d+)-(\d*)$/.exec(range);
-    if (match) {
-      const start = Number(match[1]);
-      const end = match[2] ? Math.min(Number(match[2]), row.asset.size - 1) : row.asset.size - 1;
-      headers["content-range"] = `bytes ${start}-${end}/${row.asset.size}`;
-      headers["content-length"] = String(end - start + 1);
-      status = 206;
-    }
-  }
-  return new Response(object.stream, { status, headers });
+  const contentRange = upstream.headers.get("content-range");
+  const contentLength = upstream.headers.get("content-length");
+  if (contentRange) headers["content-range"] = contentRange;
+  if (contentLength) headers["content-length"] = contentLength;
+  return new Response(upstream.body, { status: upstream.status, headers });
 }
