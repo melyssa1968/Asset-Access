@@ -1,4 +1,5 @@
 import { get } from "@vercel/blob";
+import { getVercelOidcToken } from "@vercel/oidc";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../../../db";
 import { visitorSessions } from "../../../../../../db/schema";
@@ -17,7 +18,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const wantsDownload = new URL(request.url).searchParams.get("download") === "1";
   if (wantsDownload && !row.link.allowDownload) return new Response("Downloads are disabled", { status: 403 });
-  const oidcToken = process.env.VERCEL_OIDC_TOKEN;
+  const oidcToken = await getVercelOidcToken();
   const storeId = process.env.BLOB_STORE_ID;
   if (!oidcToken || !storeId) return new Response("File service unavailable", { status: 503 });
   const object = await get(row.asset.objectKey, { access: "private", oidcToken, storeId });
