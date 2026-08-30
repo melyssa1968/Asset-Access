@@ -45,3 +45,20 @@
  .download-button svg{margin:0}
  .download-disabled{font-size:10px}
 }
+
+/* Paginated deck viewer */
+.pdf-pager{height:100%;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto;gap:10px}
+.pdf-page{min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:10px}
+.pdf-page .react-pdf__Page{background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.24)}
+.pdf-page canvas{display:block;max-width:100%;height:auto!important}
+.pdf-controls{display:flex;align-items:center;justify-content:center;gap:16px;color:#fff;padding:0 8px 4px}
+.pdf-controls button{height:38px;border:1px solid #5a5d6b;border-radius:8px;background:#fff;color:var(--ink);display:flex;align-items:center;gap:5px;padding:0 12px;font-size:12px;font-weight:650}
+.pdf-controls button:disabled{opacity:.4}
+.pdf-controls button svg{width:16px}
+.pdf-controls span{min-width:90px;text-align:center;font-size:12px}
+@media(max-width:720px){
+ .pdf-page{padding:4px;align-items:center}
+ .pdf-controls{gap:8px;padding-bottom:2px}
+ .pdf-controls button{height:42px;padding:0 10px}
+ .pdf-controls span{min-width:78px;font-size:11px}
+}
