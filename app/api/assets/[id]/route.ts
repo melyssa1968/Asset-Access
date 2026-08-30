@@ -29,7 +29,10 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     const db = await getDb();
     const rows = await db.select().from(assets).where(and(eq(assets.id, id), eq(assets.ownerEmail, ownerEmail))).limit(1);
     if (!rows[0]) return new Response("Not found", { status: 404 });
-    await del(rows[0].objectKey);
+    const oidcToken = process.env.VERCEL_OIDC_TOKEN;
+    const storeId = process.env.BLOB_STORE_ID;
+    if (!oidcToken || !storeId) return Response.json({ error: "File service unavailable" }, { status: 503 });
+    await del(rows[0].objectKey, { oidcToken, storeId });
     await db.update(assets).set({ archivedAt: new Date() }).where(eq(assets.id, id));
     return Response.json({ ok: true });
   } catch (error) {
