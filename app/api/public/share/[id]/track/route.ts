@@ -1,5 +1,28 @@
-import { and,eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../../../db";
-import { visitorSessions,visits } from "../../../../../../db/schema";
-import { cookieName,getActiveShare,readCookie } from "../../../../../../lib/share";
-export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){const{id}=await params,row=await getActiveShare(id);if(!row)return new Response(null,{status:404});const sessionId=readCookie(request,cookieName(id));if(!sessionId)return new Response(null,{status:401});const sessions=await getDb().select().from(visitorSessions).where(and(eq(visitorSessions.id,sessionId),eq(visitorSessions.linkId,id))).limit(1);if(!sessions[0])return new Response(null,{status:401});const body=await request.json() as {event?:string;durationMs?:number;progress?:number},allowed=["heartbeat","complete","download"];if(!body.event||!allowed.includes(body.event))return Response.json({error:"Invalid event"},{status:400});const now=new Date(),db=getDb();await db.batch([db.insert(visits).values({id:crypto.randomUUID(),linkId:id,sessionId,visitorEmail:sessions[0].visitorEmail,event:body.event,durationMs:Math.max(0,Math.min(body.durationMs||0,86400000)),progress:Math.max(0,Math.min(body.progress||0,100)),createdAt:now}),db.update(visitorSessions).set({lastSeenAt:now}).where(eq(visitorSessions.id,sessionId))]);return new Response(null,{status:204})}
+import { visitorSessions, visits } from "../../../../../../db/schema";
+import { cookieName, getActiveShare, readCookie } from "../../../../../../lib/share";
+
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const row = await getActiveShare(id);
+  if (!row) return new Response(null, { status: 404 });
+  const sessionId = readCookie(request, cookieName(id));
+  if (!sessionId) return new Response(null, { status: 401 });
+  const db = await getDb();
+  const sessions = await db.select().from(visitorSessions)
+    .where(and(eq(visitorSessions.id, sessionId), eq(visitorSessions.linkId, id))).limit(1);
+  if (!sessions[0]) return new Response(null, { status: 401 });
+  const body = await request.json() as { event?: string; durationMs?: number; progress?: number };
+  const allowed = ["heartbeat", "complete", "download"];
+  if (!body.event || !allowed.includes(body.event)) return Response.json({ error: "Invalid event" }, { status: 400 });
+  const now = new Date();
+  await db.insert(visits).values({
+    id: crypto.randomUUID(), linkId: id, sessionId,
+    visitorEmail: sessions[0].visitorEmail, event: body.event,
+    durationMs: Math.max(0, Math.min(body.durationMs || 0, 86400000)),
+    progress: Math.max(0, Math.min(body.progress || 0, 100)), createdAt: now,
+  });
+  await db.update(visitorSessions).set({ lastSeenAt: now }).where(eq(visitorSessions.id, sessionId));
+  return new Response(null, { status: 204 });
+}
