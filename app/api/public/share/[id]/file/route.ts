@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const wantsDownload = new URL(request.url).searchParams.get("download") === "1";
   if (wantsDownload && !row.link.allowDownload) return new Response("Downloads are disabled", { status: 403 });
-  const object = await get(row.asset.objectKey);
+  const object = await get(row.asset.objectKey, { access: "private" });
   if (!object || object.statusCode !== 200) return new Response("File unavailable", { status: 404 });
   return new Response(object.stream, { headers: {
     "content-type": row.asset.contentType || "application/octet-stream",
