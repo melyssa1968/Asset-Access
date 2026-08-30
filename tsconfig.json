@@ -43,6 +43,7 @@
     "vite.config.ts",
     ".openai",
     "drizzle.config.ts",
-    "examples"
+    "examples",
+    "worker"
   ]
 }
