@@ -1,6 +1,28 @@
-import { env } from "cloudflare:workers";
-import { and,eq } from "drizzle-orm";
+import { get } from "@vercel/blob";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../../../db";
 import { visitorSessions } from "../../../../../../db/schema";
-import { cookieName,getActiveShare,readCookie } from "../../../../../../lib/share";
-export async function GET(request:Request,{params}:{params:Promise<{id:string}>}){const{id}=await params,row=await getActiveShare(id);if(!row)return new Response("This link is unavailable",{status:404});const sessionId=readCookie(request,cookieName(id));if(!sessionId)return new Response("Access required",{status:401});const session=await getDb().select({id:visitorSessions.id}).from(visitorSessions).where(and(eq(visitorSessions.id,sessionId),eq(visitorSessions.linkId,id))).limit(1);if(!session[0])return new Response("Access required",{status:401});const object=await env.BUCKET.get(row.asset.objectKey);if(!object)return new Response("File unavailable",{status:404});const wantsDownload=new URL(request.url).searchParams.get("download")==="1";if(wantsDownload&&!row.link.allowDownload)return new Response("Downloads are disabled",{status:403});return new Response(object.body,{headers:{"content-type":row.asset.contentType||"application/octet-stream","content-disposition":`${wantsDownload?"attachment":"inline"}; filename="${row.asset.fileName.replaceAll('"',"")}"`,"cache-control":"private, no-store","x-content-type-options":"nosniff"}})}
+import { cookieName, getActiveShare, readCookie } from "../../../../../../lib/share";
+
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const row = await getActiveShare(id);
+  if (!row) return new Response("This link is unavailable", { status: 404 });
+  const sessionId = readCookie(request, cookieName(id));
+  if (!sessionId) return new Response("Access required", { status: 401 });
+  const db = await getDb();
+  const session = await db.select({ id: visitorSessions.id }).from(visitorSessions)
+    .where(and(eq(visitorSessions.id, sessionId), eq(visitorSessions.linkId, id))).limit(1);
+  if (!session[0]) return new Response("Access required", { status: 401 });
+
+  const wantsDownload = new URL(request.url).searchParams.get("download") === "1";
+  if (wantsDownload && !row.link.allowDownload) return new Response("Downloads are disabled", { status: 403 });
+  const object = await get(row.asset.objectKey);
+  if (!object || object.statusCode !== 200) return new Response("File unavailable", { status: 404 });
+  return new Response(object.stream, { headers: {
+    "content-type": row.asset.contentType || "application/octet-stream",
+    "content-disposition": `${wantsDownload ? "attachment" : "inline"}; filename="${row.asset.fileName.replaceAll('"', "")}"`,
+    "cache-control": "private, no-store",
+    "x-content-type-options": "nosniff",
+  } });
+}
