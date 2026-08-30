@@ -3,3 +3,45 @@
 @media(max-width:980px){.overview-grid{grid-template-columns:repeat(2,1fr)}.table-head{display:none}.asset-row{grid-template-columns:1fr 70px 110px}.asset-row>:nth-child(3),.asset-row>:nth-child(4){display:none}.visitor-grid{grid-template-columns:1fr}}
 @media(max-width:720px){.app-shell{display:block}.sidebar{position:fixed;z-index:50;inset:0 auto 0 0;width:250px;transform:translateX(-100%);transition:transform .2s}.sidebar.mobile-open{transform:translateX(0)}.mobile-menu,.mobile-close{display:grid;border:0;background:none;place-items:center}.mobile-menu{margin-right:8px}.mobile-close{margin-left:auto;color:#fff}.content{padding:22px 16px}.topbar{justify-content:flex-start}.topbar>div:last-child{margin-left:auto}.topbar .search{display:none}.overview-grid{grid-template-columns:1fr 1fr}.asset-row{grid-template-columns:1fr auto;padding:12px}.asset-row>.stat-cell{display:none}.link-card{grid-template-columns:38px 1fr}.link-actions{grid-column:2}.document-header{grid-template-columns:1fr auto}.document-header>.viewer-brand{display:none}.document-title{justify-self:start}.document-stage{padding:8px}}
 @media(max-width:440px){.overview-grid,.loading-grid{grid-template-columns:1fr}.header-actions .primary{font-size:0}.asset-name b{max-width:155px;overflow:hidden;text-overflow:ellipsis}.gate-card{padding:28px 22px}.viewer-shell{padding:18px}.document-title small{display:none}}
+
+/* Responsive upload and multi-page asset viewing */
+.upload-dialog{max-height:calc(100dvh - 24px);overflow:auto}
+.pdf-scroll{height:100%;overflow:auto;display:flex;justify-content:center;padding:12px}
+.pdf-scroll .react-pdf__Document{display:grid;gap:14px;justify-items:center}
+.pdf-scroll .react-pdf__Page{background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.22)}
+.pdf-scroll canvas{max-width:100%;height:auto!important}
+.viewer-loading{background:#fff;border-radius:8px;padding:24px;color:var(--muted)}
+.video-stage{height:100%;display:grid;place-items:center;background:#171820;border-radius:8px;overflow:hidden}
+.video-stage video{display:block;max-width:100%;max-height:100%;width:auto;height:auto}
+@media(max-width:720px){
+ .topbar{align-items:flex-start;gap:10px}
+ .header-actions{margin-left:auto;flex-shrink:0}
+ .content{min-width:0;overflow-x:hidden}
+ .asset-table{overflow:visible;background:transparent;border:0}
+ .asset-row{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;gap:8px}
+ .asset-name{min-width:0}
+ .asset-name>div:last-child{min-width:0}
+ .row-actions button{min-height:40px}
+ .document-shell{height:100dvh;grid-template-rows:auto 1fr}
+ .document-header{min-height:64px;padding:8px 12px;gap:8px}
+ .document-title{min-width:0}
+ .document-title>div{min-width:0}
+ .document-title b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:48vw}
+ .download-button,.download-disabled{white-space:nowrap}
+ .document-stage{min-height:0;padding:6px}
+ .pdf-scroll{padding:6px}
+ .pdf-scroll .react-pdf__Document{gap:8px}
+ .video-stage{border-radius:4px}
+ .upload-dialog{width:calc(100vw - 16px);max-width:none;padding:20px 16px}
+ .upload-dialog .dropzone{height:180px;padding:18px;text-align:center}
+}
+@media(max-width:440px){
+ .topbar h1{font-size:23px}
+ .metric{min-height:92px;padding:15px}
+ .metric strong{font-size:25px}
+ .document-header{grid-template-columns:minmax(0,1fr) auto}
+ .document-title svg{display:none}
+ .download-button{font-size:0;padding:9px}
+ .download-button svg{margin:0}
+ .download-disabled{font-size:10px}
+}
