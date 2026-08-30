@@ -42,6 +42,7 @@
     "scripts",
     "vite.config.ts",
     ".openai",
-    "drizzle.config.ts"
+    "drizzle.config.ts",
+    "examples"
   ]
 }
