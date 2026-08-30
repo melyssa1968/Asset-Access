@@ -2,7 +2,8 @@ import { and,eq,isNull } from "drizzle-orm";
 import { getDb } from "../db";
 import { assets,shareLinks } from "../db/schema";
 export async function getActiveShare(id:string){
- const rows=await getDb().select({link:shareLinks,asset:assets}).from(shareLinks).innerJoin(assets,eq(assets.id,shareLinks.assetId)).where(and(eq(shareLinks.id,id),isNull(shareLinks.revokedAt),isNull(assets.archivedAt))).limit(1);
+ const db=await getDb();
+ const rows=await db.select({link:shareLinks,asset:assets}).from(shareLinks).innerJoin(assets,eq(assets.id,shareLinks.assetId)).where(and(eq(shareLinks.id,id),isNull(shareLinks.revokedAt),isNull(assets.archivedAt))).limit(1);
  const row=rows[0]; if(!row)return null;
  if(row.link.expiresAt&&row.link.expiresAt.getTime()<Date.now())return null;
  return row;
