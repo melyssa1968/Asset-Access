@@ -1,16 +1,16 @@
 "use client";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import { ArrowDownToLine, FileText, LockKeyhole, ShieldCheck } from "lucide-react";
+import { ArrowDownToLine, ChevronLeft, ChevronRight, FileText, LockKeyhole, ShieldCheck } from "lucide-react";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
 type Meta={asset:{name:string;fileName:string;contentType:string;size:number};link:{requireEmail:boolean;allowDownload:boolean;expiresAt:string|null}};
 
 function PdfViewer({src,name}:{src:string;name:string}){
- const [pages,setPages]=useState(0),[width,setWidth]=useState(700),holder=useRef<HTMLDivElement>(null);
- useEffect(()=>{const node=holder.current;if(!node)return;const resize=()=>setWidth(Math.max(280,Math.min(900,node.clientWidth-24)));resize();const observer=new ResizeObserver(resize);observer.observe(node);return()=>observer.disconnect()},[]);
- return <div className="pdf-scroll" ref={holder}><Document file={src} loading={<div className="viewer-loading">Loading all pages…</div>} error={<div className="viewer-loading">This PDF could not be displayed.</div>} onLoadSuccess={({numPages})=>setPages(numPages)}>{Array.from({length:pages},(_,index)=><Page key={index+1} pageNumber={index+1} width={width} renderAnnotationLayer={false} renderTextLayer={false}/>)}</Document><span className="sr-only">{name}</span></div>
+ const [pages,setPages]=useState(0),[page,setPage]=useState(1),[width,setWidth]=useState(700),holder=useRef<HTMLDivElement>(null);
+ useEffect(()=>{const node=holder.current;if(!node)return;const resize=()=>setWidth(Math.max(280,Math.min(1100,node.clientWidth-24)));resize();const observer=new ResizeObserver(resize);observer.observe(node);return()=>observer.disconnect()},[]);
+ return <div className="pdf-pager" ref={holder}><div className="pdf-page"><Document file={src} loading={<div className="viewer-loading">Loading deck…</div>} error={<div className="viewer-loading">This PDF could not be displayed.</div>} onLoadSuccess={({numPages})=>{setPages(numPages);setPage(1)}}><Page pageNumber={page} width={width} renderAnnotationLayer={false} renderTextLayer={false}/></Document></div>{pages>1&&<nav className="pdf-controls" aria-label="Slide navigation"><button onClick={()=>setPage(value=>Math.max(1,value-1))} disabled={page===1}><ChevronLeft/>Previous</button><span>Slide {page} of {pages}</span><button onClick={()=>setPage(value=>Math.min(pages,value+1))} disabled={page===pages}>Next<ChevronRight/></button></nav>}<span className="sr-only">{name}</span></div>
 }
 
 export default function ShareViewer({id}:{id:string}){
