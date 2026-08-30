@@ -1,0 +1,2 @@
+import { getActiveShare } from "../../../../../lib/share";
+export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){const{id}=await params,row=await getActiveShare(id);if(!row)return Response.json({error:"This link is unavailable"},{status:404});return Response.json({asset:{name:row.asset.name,fileName:row.asset.fileName,contentType:row.asset.contentType,size:row.asset.size},link:{id:row.link.id,label:row.link.label,requireEmail:row.link.requireEmail,allowDownload:row.link.allowDownload,expiresAt:row.link.expiresAt}})}

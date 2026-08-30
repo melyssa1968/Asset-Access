@@ -1,0 +1,7 @@
+import { env } from "cloudflare:workers";
+import { and,eq } from "drizzle-orm";
+import { getDb } from "../../../../db";
+import { assets } from "../../../../db/schema";
+import { requireOwner } from "../../../../lib/auth";
+export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){try{const ownerEmail=await requireOwner(),{id}=await params,body=await request.json() as {name?:string;archive?:boolean};const rows=await getDb().update(assets).set({...(body.name?{name:body.name.trim()}:{}),...(body.archive?{archivedAt:new Date()}: {})}).where(and(eq(assets.id,id),eq(assets.ownerEmail,ownerEmail))).returning({id:assets.id});return rows.length?Response.json({ok:true}):new Response("Not found",{status:404})}catch(e){if(e instanceof Response)return e;return Response.json({error:"Update failed"},{status:500})}}
+export async function DELETE(_request:Request,{params}:{params:Promise<{id:string}>}){try{const ownerEmail=await requireOwner(),{id}=await params,db=getDb(),rows=await db.select().from(assets).where(and(eq(assets.id,id),eq(assets.ownerEmail,ownerEmail))).limit(1);if(!rows[0])return new Response("Not found",{status:404});await env.BUCKET.delete(rows[0].objectKey);await db.update(assets).set({archivedAt:new Date()}).where(eq(assets.id,id));return Response.json({ok:true})}catch(e){if(e instanceof Response)return e;return Response.json({error:"Delete failed"},{status:500})}}
