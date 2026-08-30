@@ -1,5 +1,6 @@
 "use client";
 import { FormEvent,useEffect,useMemo,useState } from "react";
+import { upload as uploadBlob } from "@vercel/blob/client";
 import { BarChart3,Copy,Eye,FileText,FolderOpen,Link2,Menu,MoreHorizontal,Plus,RefreshCw,Search,ShieldCheck,Upload,Users,X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog,DialogContent,DialogDescription,DialogHeader,DialogTitle,DialogTrigger } from "@/components/ui/dialog";
@@ -18,13 +19,29 @@ export default function Home(){const[view,setView]=useState<"assets"|"links"|"an
  async function load(){setLoading(true);const[a,l,n]=await Promise.all([fetch("/api/assets"),fetch("/api/links"),fetch("/api/analytics")]);if([a,l,n].some(r=>r.status===401)){toast.error("Your session has expired");setLoading(false);return}const[aj,lj,nj]=await Promise.all([a.json(),l.json(),n.json()]);setAssets(aj.assets||[]);setLinks(lj.links||[]);setAnalytics(nj.summary?nj:emptyAnalytics);setLoading(false)}
  useEffect(()=>{load().catch(()=>{toast.error("Could not load workspace");setLoading(false)})},[]);
  const filtered=useMemo(()=>assets.filter(a=>a.name.toLowerCase().includes(query.toLowerCase())),[assets,query]);
- async function upload(files:FileList|null){if(!files?.length)return;setUploading(true);let success=0;for(const file of Array.from(files)){const form=new FormData();form.append("file",file);const r=await fetch("/api/assets",{method:"POST",body:form});const j=await r.json();if(r.ok)success++;else toast.error(j.error||`Could not upload ${file.name}`)}setUploading(false);if(success){toast.success(`${success} asset${success>1?"s":""} uploaded`);setUploadOpen(false);await load()}}
+ async function uploadAssets(files:FileList|null){
+  if(!files?.length)return;
+  setUploading(true);
+  let success=0;
+  for(const file of Array.from(files)){
+    try{
+      const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"-");
+      const pathname=`assets/${crypto.randomUUID()}/${safe}`;
+      const blob=await uploadBlob(pathname,file,{access:"private",handleUploadUrl:"/api/assets/upload"});
+      const r=await fetch("/api/assets",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:file.name.replace(/\.[^/.]+$/,""),fileName:file.name,objectKey:blob.url,contentType:file.type||"application/octet-stream",size:file.size})});
+      const j=await r.json();
+      if(r.ok)success++;else toast.error(j.error||`Could not register ${file.name}`);
+    }catch(error){toast.error(error instanceof Error?error.message:`Could not upload ${file.name}`)}
+  }
+  setUploading(false);
+  if(success){toast.success(`${success} asset${success>1?"s":""} uploaded`);setUploadOpen(false);await load()}
+}
  async function archive(a:Asset){const r=await fetch(`/api/assets/${a.id}`,{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({archive:true})});if(r.ok){toast.success("Asset archived");await load()}else toast.error("Could not archive asset")}
  async function revoke(link:LinkRow){const r=await fetch(`/api/links/${link.id}`,{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({revoke:!link.revokedAt})});if(r.ok){toast.success(link.revokedAt?"Link restored":"Link revoked");await load()}else toast.error("Could not update link")}
  async function copy(path:string){await navigator.clipboard.writeText(`${location.origin}${path}`);toast.success("Link copied")}
  const nav=[["assets","Assets",FolderOpen],["links","Links",Link2],["analytics","Analytics",BarChart3],["visitors","Visitors",Users]] as const;
  return <div className="app-shell"><aside className={`sidebar ${mobile?"mobile-open":""}`}><div className="brand"><div className="brand-mark">A</div><span>Assetly</span><button className="mobile-close" onClick={()=>setMobile(false)} aria-label="Close navigation"><X/></button></div><nav>{nav.map(([key,label,Icon])=><button key={key} className={`nav-item ${view===key?"active":""}`} onClick={()=>{setView(key);setMobile(false)}}><Icon size={18}/>{label}</button>)}</nav><div className="sidebar-bottom"><div className="security-panel"><ShieldCheck/><div><b>Private workspace</b><span>Files are access-controlled</span></div></div><div className="profile"><div className="avatar">MP</div><div><b>Melyssa</b><span>Workspace owner</span></div></div></div></aside>
- <main className="content"><header className="topbar"><button className="mobile-menu" onClick={()=>setMobile(true)} aria-label="Open navigation"><Menu/></button><div><p>Workspace</p><h1>{nav.find(n=>n[0]===view)?.[1]}</h1></div><div className="header-actions"><Button variant="ghost" size="icon" onClick={load} aria-label="Refresh workspace"><RefreshCw size={17}/></Button>{view==="assets"&&<><div className="search"><Search size={17}/><Input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search assets"/></div><Dialog open={uploadOpen} onOpenChange={setUploadOpen}><DialogTrigger asChild><Button className="primary"><Plus size={17}/>Add asset</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>Add an asset</DialogTitle><DialogDescription>Upload a PDF, PowerPoint, Word document, or MP4 up to 100 MB.</DialogDescription></DialogHeader><label className={`dropzone ${uploading?"busy":""}`}><Upload size={28}/><strong>{uploading?"Uploading securely…":"Drop files here or click to browse"}</strong><span>Files are private until you create a link.</span><input disabled={uploading} type="file" multiple accept=".pdf,.pptx,.docx,.mp4" onChange={e=>upload(e.target.files)}/></label></DialogContent></Dialog></>}</div></header>
+ <main className="content"><header className="topbar"><button className="mobile-menu" onClick={()=>setMobile(true)} aria-label="Open navigation"><Menu/></button><div><p>Workspace</p><h1>{nav.find(n=>n[0]===view)?.[1]}</h1></div><div className="header-actions"><Button variant="ghost" size="icon" onClick={load} aria-label="Refresh workspace"><RefreshCw size={17}/></Button>{view==="assets"&&<><div className="search"><Search size={17}/><Input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search assets"/></div><Dialog open={uploadOpen} onOpenChange={setUploadOpen}><DialogTrigger asChild><Button className="primary"><Plus size={17}/>Add asset</Button></DialogTrigger><DialogContent className="upload-dialog"><DialogHeader><DialogTitle>Add an asset</DialogTitle><DialogDescription>Upload PDFs, presentations, documents, or videos up to 500 MB.</DialogDescription></DialogHeader><label className={`dropzone ${uploading?"busy":""}`}><Upload size={28}/><strong>{uploading?"Uploading securely…":"Drop files here or click to browse"}</strong><span>Files are private until you create a link.</span><input disabled={uploading} type="file" multiple accept=".pdf,.pptx,.docx,.mp4,.mov,.webm,application/pdf,video/*" onChange={e=>uploadAssets(e.target.files)}/></label></DialogContent></Dialog></>}</div></header>
  {loading?<Loading/>:view==="assets"?<Assets assets={filtered} query={query} onShare={setShareAsset} onArchive={archive} onAdd={()=>setUploadOpen(true)}/>:view==="links"?<Links links={links} onCopy={copy} onRevoke={revoke}/>:view==="analytics"?<AnalyticsView data={analytics}/>:<VisitorsView events={analytics.recent}/>}</main>
  <ShareDialog asset={shareAsset} onClose={()=>setShareAsset(null)} onCreated={async(path)=>{await copy(path);setShareAsset(null);await load()}}/><Toaster position="bottom-right" richColors/></div>
 }
