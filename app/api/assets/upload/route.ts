@@ -1,11 +1,12 @@
 import { issueSignedToken } from "@vercel/blob";
 import { handleUploadPresigned, type HandleUploadPresignedBody } from "@vercel/blob/client";
+import { getVercelOidcToken } from "@vercel/oidc";
 import { requireOwner } from "../../../../lib/auth";
 
-function blobIdentity() {
-  const oidcToken = process.env.VERCEL_OIDC_TOKEN;
+async function blobIdentity() {
+  const oidcToken = await getVercelOidcToken();
   const storeId = process.env.BLOB_STORE_ID;
-  if (!oidcToken || !storeId) throw new Error("Vercel Blob OIDC credentials are unavailable");
+  if (!oidcToken || !storeId) throw new Error("Vercel Blob credentials are unavailable");
   return { oidcToken, storeId };
 }
 
@@ -17,13 +18,16 @@ export async function POST(request: Request) {
       body,
       request,
       getSignedToken: async (pathname) => ({
-        token: await issueSignedToken({
-          pathname,
-          operations: ["put"],
-          validUntil: Date.now() + 60 * 60 * 1000,
-          oidcToken: blobIdentity().oidcToken,
-          storeId: blobIdentity().storeId,
-        }),
+        token: await (async () => {
+          const identity = await blobIdentity();
+          return issueSignedToken({
+            pathname,
+            operations: ["put"],
+            validUntil: Date.now() + 60 * 60 * 1000,
+            oidcToken: identity.oidcToken,
+            storeId: identity.storeId,
+          });
+        })(),
         urlOptions: {
           allowedContentTypes: [
             "application/pdf",
