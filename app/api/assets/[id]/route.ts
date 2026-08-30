@@ -1,4 +1,5 @@
 import { del } from "@vercel/blob";
+import { getVercelOidcToken } from "@vercel/oidc";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { assets } from "../../../../db/schema";
@@ -29,7 +30,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     const db = await getDb();
     const rows = await db.select().from(assets).where(and(eq(assets.id, id), eq(assets.ownerEmail, ownerEmail))).limit(1);
     if (!rows[0]) return new Response("Not found", { status: 404 });
-    const oidcToken = process.env.VERCEL_OIDC_TOKEN;
+    const oidcToken = await getVercelOidcToken();
     const storeId = process.env.BLOB_STORE_ID;
     if (!oidcToken || !storeId) return Response.json({ error: "File service unavailable" }, { status: 503 });
     await del(rows[0].objectKey, { oidcToken, storeId });
