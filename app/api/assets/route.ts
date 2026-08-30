@@ -1,8 +1,14 @@
-import { put } from "@vercel/blob";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { assets, shareLinks, visitorSessions, visits } from "../../../db/schema";
 import { requireOwner } from "../../../lib/auth";
+
+const allowed = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "video/mp4", "video/quicktime", "video/webm",
+];
 
 export async function GET() {
   try {
@@ -31,23 +37,22 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const ownerEmail = await requireOwner();
-    const form = await request.formData();
-    const file = form.get("file");
-    if (!(file instanceof File)) return Response.json({ error: "Choose a file" }, { status: 400 });
-    if (file.size > 104857600) return Response.json({ error: "Files must be under 100 MB" }, { status: 413 });
-    const allowed = ["application/pdf", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "video/mp4"];
-    if (file.type && !allowed.includes(file.type)) return Response.json({ error: "Upload a PDF, PowerPoint, Word document, or MP4" }, { status: 415 });
+    const body = await request.json() as {
+      name?: string; fileName?: string; objectKey?: string;
+      contentType?: string; size?: number;
+    };
+    if (!body.fileName || !body.objectKey || !body.size) return Response.json({ error: "Missing upload details" }, { status: 400 });
+    if (body.size > 524288000) return Response.json({ error: "Files must be under 500 MB" }, { status: 413 });
+    const contentType = body.contentType || "application/octet-stream";
+    if (!allowed.includes(contentType)) return Response.json({ error: "Upload a PDF, PowerPoint, Word document, MP4, MOV, or WebM video" }, { status: 415 });
+    const blobUrl = new URL(body.objectKey);
+    if (!blobUrl.hostname.endsWith(".private.blob.vercel-storage.com")) return Response.json({ error: "Invalid private upload" }, { status: 400 });
 
-    const id = crypto.randomUUID();
-    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-    const pathname = `assets/${ownerEmail}/${id}/${safe}`;
-    const blob = await put(pathname, file, { access: "private", addRandomSuffix: false });
     const record = {
-      id, ownerEmail,
-      name: String(form.get("name") || file.name.replace(/\.[^/.]+$/, "")).trim(),
-      fileName: file.name, objectKey: blob.url,
-      contentType: file.type || "application/octet-stream",
-      size: file.size, createdAt: new Date(),
+      id: crypto.randomUUID(), ownerEmail,
+      name: String(body.name || body.fileName.replace(/\.[^/.]+$/, "")).trim(),
+      fileName: body.fileName, objectKey: blobUrl.toString(),
+      contentType, size: body.size, createdAt: new Date(),
     };
     const db = await getDb();
     await db.insert(assets).values(record);
@@ -55,6 +60,6 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof Response) return error;
     console.error(error);
-    return Response.json({ error: "Upload failed" }, { status: 500 });
+    return Response.json({ error: "Upload registration failed" }, { status: 500 });
   }
 }
