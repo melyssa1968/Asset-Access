@@ -62,3 +62,27 @@
  .pdf-controls button{height:42px;padding:0 10px}
  .pdf-controls span{min-width:78px;font-size:11px}
 }
+
+/* Opaque, correctly layered menus and dialogs */
+:root{
+ --background:#ffffff;
+ --foreground:#151827;
+ --popover:#ffffff;
+ --popover-foreground:#151827;
+ --accent:#f1efff;
+ --accent-foreground:#151827;
+ --border:#e8e9ef;
+ --ring:#6556e8;
+ --muted-foreground:#6f7487;
+}
+[data-slot="dialog-overlay"]{z-index:100!important;background:rgba(15,17,28,.58)!important;backdrop-filter:blur(2px)}
+[data-slot="dialog-content"]{z-index:110!important;background:#fff!important;color:var(--ink)!important;border:1px solid #dedfe7!important;box-shadow:0 24px 70px rgba(15,17,28,.28)!important;isolation:isolate}
+[data-slot="dialog-content"] input{background:#fff;color:var(--ink)}
+[data-slot="dropdown-menu-content"],[data-slot="dropdown-menu-sub-content"]{z-index:120!important;background:#fff!important;color:var(--ink)!important;border:1px solid #dedfe7!important;box-shadow:0 14px 38px rgba(15,17,28,.24)!important;isolation:isolate;min-width:168px}
+[data-slot="dropdown-menu-item"]{background:#fff;min-height:40px;cursor:pointer}
+[data-slot="dropdown-menu-item"]:focus,[data-slot="dropdown-menu-item"]:hover{background:#f1efff!important;color:var(--ink)!important}
+[data-slot="dropdown-menu-trigger"][data-state="open"]{position:relative;z-index:121}
+@media(max-width:720px){
+ [data-slot="dialog-content"]{max-height:calc(100dvh - 16px)!important;width:calc(100vw - 16px)!important;max-width:none!important}
+ [data-slot="dropdown-menu-content"]{min-width:190px}
+}
