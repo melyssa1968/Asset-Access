@@ -1,6 +1,6 @@
 "use client";
 import { FormEvent,useEffect,useMemo,useState } from "react";
-import { upload as uploadBlob } from "@vercel/blob/client";
+import { uploadPresigned } from "@vercel/blob/client";
 import { BarChart3,Copy,Eye,FileText,FolderOpen,Link2,Menu,MoreHorizontal,Plus,RefreshCw,Search,ShieldCheck,Upload,Users,X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog,DialogContent,DialogDescription,DialogHeader,DialogTitle,DialogTrigger } from "@/components/ui/dialog";
@@ -27,7 +27,7 @@ export default function Home(){const[view,setView]=useState<"assets"|"links"|"an
     try{
       const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"-");
       const pathname=`assets/${crypto.randomUUID()}/${safe}`;
-      const blob=await uploadBlob(pathname,file,{access:"private",handleUploadUrl:"/api/assets/upload"});
+      const blob=await uploadPresigned(pathname,file,{access:"private",handleUploadUrl:"/api/assets/upload",multipart:file.size>10*1024*1024});
       const r=await fetch("/api/assets",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:file.name.replace(/\.[^/.]+$/,""),fileName:file.name,objectKey:blob.url,contentType:file.type||"application/octet-stream",size:file.size})});
       const j=await r.json();
       if(r.ok)success++;else toast.error(j.error||`Could not register ${file.name}`);
