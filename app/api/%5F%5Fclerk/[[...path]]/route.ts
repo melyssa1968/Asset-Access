@@ -1,5 +1,5 @@
 const CLERK_FRONTEND_API = "https://clerk.racepoint.ai";
-const PUBLIC_PROXY_URL = "https://racepoint.ai/asset-access/api/__clerk";
+const PUBLIC_PROXY_URL = "https://racepoint.ai/asset-access/api/__clerk/";
 
 async function proxyToClerk(request: Request) {
   const secretKey = process.env.CLERK_SECRET_KEY;
@@ -37,7 +37,7 @@ async function proxyToClerk(request: Request) {
   if (location) {
     const redirect = new URL(location, target);
     if (redirect.origin === CLERK_FRONTEND_API) {
-      responseHeaders.set("location", `${PUBLIC_PROXY_URL}${redirect.pathname}${redirect.search}`);
+      responseHeaders.set("location", `${PUBLIC_PROXY_URL}${redirect.pathname.replace(/^\//, "")}${redirect.search}`);
     }
   }
 
