@@ -22,7 +22,7 @@ export default clerkMiddleware(
     proxyUrl: "https://racepoint.ai/asset-access/api/__clerk",
     frontendApiProxy: {
       enabled: true,
-      path: "/api/__clerk",
+      path: "/asset-access/api/__clerk",
     },
   },
 );
