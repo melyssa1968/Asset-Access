@@ -19,6 +19,7 @@ export default clerkMiddleware(
   },
   {
     authorizedParties: ["https://racepoint.ai"],
+    proxyUrl: "https://racepoint.ai/asset-access/api/__clerk",
   },
 );
 
