@@ -6,6 +6,7 @@ const BASE_PATH = "/asset-access";
 const isPublicRoute = createRouteMatcher([
   "/share(.*)",
   "/api/public(.*)",
+  "/api/__clerk(.*)",
   "/sign-in(.*)",
   "/sign-up(.*)",
 ]);
