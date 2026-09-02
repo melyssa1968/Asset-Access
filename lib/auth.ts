@@ -9,5 +9,5 @@ export type TenantContext = {
 export async function requireTenant(): Promise<TenantContext> {
   const { userId, orgId } = await auth();
   if (!userId) throw new Response("Unauthorized", { status: 401 });
-  return { userId, tenantId: orgId || userId, organizationId: orgId };
+  return { userId, tenantId: orgId || userId, organizationId: orgId ?? null };
 }
