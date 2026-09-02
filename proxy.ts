@@ -4,10 +4,10 @@ import { NextResponse } from "next/server";
 const BASE_PATH = "/asset-access";
 
 const isPublicRoute = createRouteMatcher([
-  `${BASE_PATH}/share(.*)`,
-  `${BASE_PATH}/api/public(.*)`,
-  `${BASE_PATH}/sign-in(.*)`,
-  `${BASE_PATH}/sign-up(.*)`,
+  "/share(.*)",
+  "/api/public(.*)",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
