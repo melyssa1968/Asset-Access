@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <ClerkProvider signInUrl="/asset-access/sign-in" signUpUrl="/asset-access/sign-up"><html lang="en"><body>{children}</body></html></ClerkProvider>;
+  return <ClerkProvider proxyUrl="https://racepoint.ai/__clerk" signInUrl="/asset-access/sign-in" signUpUrl="/asset-access/sign-up"><html lang="en"><body>{children}</body></html></ClerkProvider>;
 }
