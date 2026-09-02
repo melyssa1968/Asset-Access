@@ -1,17 +1,19 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
+const BASE_PATH = "/asset-access";
+
 const isPublicRoute = createRouteMatcher([
-  "/share(.*)",
-  "/api/public(.*)",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
+  `${BASE_PATH}/share(.*)`,
+  `${BASE_PATH}/api/public(.*)`,
+  `${BASE_PATH}/sign-in(.*)`,
+  `${BASE_PATH}/sign-up(.*)`,
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
   if (isPublicRoute(request)) return;
   const { userId } = await auth();
-  if (!userId) return NextResponse.redirect(new URL("/sign-in", request.url));
+  if (!userId) return NextResponse.redirect(new URL(`${BASE_PATH}/sign-in`, request.url));
 });
 
 export const config = {

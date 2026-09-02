@@ -21,7 +21,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   await db.insert(visitorSessions).values({ id: sessionId, linkId: id, visitorEmail: email, country, userAgent, createdAt: now, lastSeenAt: now });
   await db.insert(visits).values({ id: crypto.randomUUID(), linkId: id, sessionId, visitorEmail: email, event: "open", createdAt: now });
   after(() => sendAssetAccessEmail({ ownerId: row.asset.ownerEmail, assetName: row.asset.name, linkLabel: row.link.label, visitorEmail: email, country, accessedAt: now }));
-  return Response.json({ ok: true, fileUrl: `/api/public/share/${id}/file`, downloadAllowed: row.link.allowDownload }, {
+  return Response.json({ ok: true, fileUrl: `/asset-access/api/public/share/${id}/file`, downloadAllowed: row.link.allowDownload }, {
     headers: { "set-cookie": `${cookieName(id)}=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800; Secure` },
   });
 }
