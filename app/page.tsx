@@ -1,9 +1,13 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+"use client";
+
+import { RedirectToSignIn, SignedIn, SignedOut } from "@clerk/nextjs";
 import Workspace from "./workspace";
 
-export default async function Home() {
-  const { userId } = await auth();
-  if (!userId) redirect("/asset-access/sign-in");
-  return <Workspace />;
+export default function Home() {
+  return (
+    <>
+      <SignedIn><Workspace /></SignedIn>
+      <SignedOut><RedirectToSignIn redirectUrl="/asset-access" /></SignedOut>
+    </>
+  );
 }
