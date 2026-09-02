@@ -1,7 +1,7 @@
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { assets, shareLinks, visitorSessions, visits } from "../../../db/schema";
-import { requireOwner } from "../../../lib/auth";
+import { requireTenant } from "../../../lib/auth";
 
 const allowed = [
   "application/pdf",
@@ -12,7 +12,7 @@ const allowed = [
 
 export async function GET() {
   try {
-    const ownerEmail = await requireOwner();
+    const { tenantId } = await requireTenant();
     const db = await getDb();
     const rows = await db.select({
       id: assets.id, name: assets.name, fileName: assets.fileName, size: assets.size,
@@ -24,7 +24,7 @@ export async function GET() {
       .leftJoin(shareLinks, eq(shareLinks.assetId, assets.id))
       .leftJoin(visits, eq(visits.linkId, shareLinks.id))
       .leftJoin(visitorSessions, eq(visitorSessions.linkId, shareLinks.id))
-      .where(and(eq(assets.ownerEmail, ownerEmail), isNull(assets.archivedAt)))
+      .where(and(eq(assets.tenantId, tenantId), isNull(assets.archivedAt)))
       .groupBy(assets.id).orderBy(desc(assets.createdAt));
     return Response.json({ assets: rows });
   } catch (error) {
@@ -36,7 +36,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const ownerEmail = await requireOwner();
+    const { userId, tenantId } = await requireTenant();
     const body = await request.json() as {
       name?: string; fileName?: string; objectKey?: string;
       contentType?: string; size?: number;
@@ -47,9 +47,10 @@ export async function POST(request: Request) {
     if (!allowed.includes(contentType)) return Response.json({ error: "Upload a PDF, PowerPoint, Word document, MP4, MOV, or WebM video" }, { status: 415 });
     const blobUrl = new URL(body.objectKey);
     if (!blobUrl.hostname.endsWith(".private.blob.vercel-storage.com")) return Response.json({ error: "Invalid private upload" }, { status: 400 });
+    if (!blobUrl.pathname.startsWith(`/tenants/${tenantId}/assets/`)) return Response.json({ error: "Upload does not belong to the active workspace" }, { status: 403 });
 
     const record = {
-      id: crypto.randomUUID(), ownerEmail,
+      id: crypto.randomUUID(), ownerEmail: userId, tenantId,
       name: String(body.name || body.fileName.replace(/\.[^/.]+$/, "")).trim(),
       fileName: body.fileName, objectKey: blobUrl.toString(),
       contentType, size: body.size, createdAt: new Date(),

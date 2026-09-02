@@ -1,7 +1,7 @@
 import { issueSignedToken } from "@vercel/blob";
 import { handleUploadPresigned, type HandleUploadPresignedBody } from "@vercel/blob/client";
 import { getVercelOidcToken } from "@vercel/oidc";
-import { requireOwner } from "../../../../lib/auth";
+import { requireTenant } from "../../../../lib/auth";
 
 async function blobIdentity() {
   const oidcToken = await getVercelOidcToken();
@@ -12,12 +12,15 @@ async function blobIdentity() {
 
 export async function POST(request: Request) {
   try {
-    const ownerId = await requireOwner();
+    const { userId, tenantId } = await requireTenant();
     const body = await request.json() as HandleUploadPresignedBody;
     const response = await handleUploadPresigned({
       body,
       request,
-      getSignedToken: async (pathname) => ({
+      getSignedToken: async (pathname) => {
+        const expectedPrefix = `tenants/${tenantId}/assets/`;
+        if (!pathname.startsWith(expectedPrefix)) throw new Response("Upload path does not belong to the active workspace", { status: 403 });
+        return ({
         token: await (async () => {
           const identity = await blobIdentity();
           return issueSignedToken({
@@ -39,8 +42,9 @@ export async function POST(request: Request) {
           addRandomSuffix: true,
           allowOverwrite: false,
         },
-        tokenPayload: JSON.stringify({ ownerId }),
-      }),
+        tokenPayload: JSON.stringify({ userId, tenantId }),
+      });
+      },
       onUploadCompleted: async () => {},
     });
     return Response.json(response);

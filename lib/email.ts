@@ -38,8 +38,10 @@ export async function sendAssetAccessEmail(notice: AccessNotice) {
       dateStyle: "medium", timeStyle: "short", timeZone: "America/New_York",
     }).format(notice.accessedAt);
     const resend = new Resend(apiKey);
+    const emailDomain = process.env.RESEND_EMAIL_DOMAIN;
+    const sender = process.env.EMAIL_FROM || (emailDomain ? `Asset Access <notifications@${emailDomain}>` : "Asset Access <onboarding@resend.dev>");
     const { error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM || "Assetly <onboarding@resend.dev>",
+      from: sender,
       to: recipient,
       subject: `${visitor} viewed ${notice.assetName}`,
       html: `<div style="font-family:Arial,sans-serif;color:#151827;max-width:560px;margin:auto">
@@ -50,7 +52,7 @@ export async function sendAssetAccessEmail(notice: AccessNotice) {
           <tr><td style="padding:5px 18px 5px 0"><strong>When</strong></td><td>${escapeHtml(time)} ET</td></tr>
           ${notice.country ? `<tr><td style="padding:5px 18px 5px 0"><strong>Country</strong></td><td>${escapeHtml(notice.country)}</td></tr>` : ""}
         </table>
-        <p style="margin-top:28px"><a href="https://asset-access-kappa.vercel.app" style="background:#6556e8;color:white;text-decoration:none;padding:11px 16px;border-radius:7px;display:inline-block">View analytics</a></p>
+        <p style="margin-top:28px"><a href="https://racepoint.ai/asset-access" style="background:#6556e8;color:white;text-decoration:none;padding:11px 16px;border-radius:7px;display:inline-block">View analytics</a></p>
       </div>`,
     });
     if (error) console.error("[asset-access-email] Resend rejected notification", error);

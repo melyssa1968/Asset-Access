@@ -1,41 +1,37 @@
 # Asset Access multi-tenant audit
 
 Date: 2026-09-02
-
-## Current status
-
-Asset Access currently isolates authenticated records by Clerk user ID. That supports separate personal workspaces, but it is not yet a complete organization-level multi-tenant model.
+Status: tenant isolation and required service configuration implemented
 
 ## Service audit
 
-| Service | Multi-tenant support | Current Asset Access status | Required action |
-| --- | --- | --- | --- |
-| Clerk | Supports organizations, memberships, roles, and per-request organization IDs | Development instance is active; Organizations is disabled | Enable Organizations, create a production instance, and deploy production keys |
-| Neon Postgres | Supports shared-schema tenancy using a tenant ID and indexes; database-level RLS can be added later | Assets are filtered by a Clerk user ID stored in the legacy `owner_email` column | Add `tenant_id`, backfill existing records, and filter every authenticated query by the active tenant |
-| Vercel Blob | Supports private shared storage and tenant-prefixed object paths | Store is private, but new object paths are not tenant-prefixed | Prefix uploads with the active tenant and validate that prefix server-side |
-| Resend | Supports transactional email to different tenant users from one verified sending domain | Access notification code exists, but `RESEND_API_KEY` and `EMAIL_FROM` are not configured for this project | Install the Resend project resource and verify a sending domain |
-| Vercel | Supports a shared multi-tenant application deployment and Git-based production deploys | GitHub deployment is connected and production is healthy | Keep GitHub as source of truth and deploy only GitHub commits |
+| Service | Multi-tenant capability | Asset Access configuration |
+| --- | --- | --- |
+| Clerk | Organizations, memberships, roles, and an active organization on each request | Production instance created for `racepoint.ai`; Organizations enabled; production keys connected to Vercel Production and Preview |
+| Neon Postgres | Shared-schema tenancy with indexed tenant keys | `assets.tenant_id` added and indexed; legacy records backfill to their creator's personal tenant; every authenticated asset, link, and analytics query filters by the active tenant |
+| Vercel Blob | Private storage with namespaced object paths | Store remains private; new uploads use `tenants/{tenantId}/assets/...`; upload authorization and asset registration validate the active-tenant prefix |
+| Resend | Transactional email from a verified domain | Resend Messaging connected to the Vercel project; `RESEND_API_KEY` and `RESEND_EMAIL_DOMAIN` are available in Production and Preview |
+| Vercel | Git-based production deployment and custom-domain routing | GitHub `main` is the source of truth; `racepoint.ai/asset-access` is routed to this deployment |
 
-## Application findings
+## Application controls
 
-- Public share access already records visitor sessions and open events.
-- A background email is already queued after a successful access, addressed to the Clerk user who owns the asset.
-- Email failures are deliberately non-blocking, but the production environment currently lacks the API key required to send.
-- Authenticated asset, link, and analytics queries are filtered by the current Clerk user ID.
-- The interface has no logout control and contains hard-coded owner identity text.
-- Organization workspaces, organization switching, tenant-aware upload prefixes, and tenant role enforcement are not yet implemented.
-- Public links are intentionally accessible without Clerk authentication; access is controlled by the unguessable link ID, revocation, expiration, and optional visitor-email gate.
+- A signed-in user works in their active Clerk organization, or in their personal workspace when no organization is active.
+- Organization members share data only within their active tenant.
+- The asset creator's Clerk user ID remains in the legacy `owner_email` column and is used as the recipient for access notifications.
+- Public share access records visitor sessions and open events, then queues a non-blocking email notification to the asset creator.
+- The UI includes organization switching and a Clerk account menu with logout.
+- Public links remain intentionally unauthenticated. Access is controlled by a high-entropy link ID, revocation, expiration, and an optional visitor-email gate.
 
-## Implementation target
+## Remaining hardening options
 
-1. Resolve each authenticated request to `tenantId = active Clerk organization ID or Clerk user ID`.
-2. Add and backfill `assets.tenant_id`; retain the existing owner field as the notification recipient/creator ID.
-3. Filter all authenticated reads and mutations by `tenant_id`.
-4. Prefix and validate new private Blob paths by tenant.
-5. Add Clerk organization switching and an account menu with logout.
-6. Keep access-email delivery tenant-safe by resolving the asset creator in Clerk.
-7. Use a verified sender domain and production Clerk credentials before onboarding customers.
+These are not blockers for tenant isolation, but are appropriate before larger enterprise onboarding:
+
+1. Add Clerk role checks for owner/admin-only actions such as deleting assets or managing organization settings.
+2. Add database row-level security as a defense-in-depth layer.
+3. Add an email delivery event/log table and a retry workflow for provider failures.
+4. Add automated cross-tenant authorization tests to CI.
+5. Configure a custom `EMAIL_FROM` only if a sender different from the Resend-managed verified domain is desired.
 
 ## Deployment rule
 
-Every application code or configuration change must be committed to GitHub first. Vercel production must be deployed from, and verified against, that GitHub commit. Dashboard-only secrets, domains, and integrations must be documented here or in the repository operations documentation.
+Every application code or configuration change must be committed to GitHub first. Vercel production must be deployed from, and verified against, that GitHub commit. Dashboard-only secrets, domains, and integrations must be documented here or in repository operations documentation.

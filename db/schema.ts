@@ -2,7 +2,9 @@ import { boolean, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core"
 
 export const assets = pgTable("assets", {
   id: text("id").primaryKey(),
+  // Legacy column name: this stores the Clerk user ID that created the asset.
   ownerEmail: text("owner_email").notNull(),
+  tenantId: text("tenant_id").notNull(),
   name: text("name").notNull(),
   fileName: text("file_name").notNull(),
   objectKey: text("object_key").notNull(),
