@@ -1,2 +1,5 @@
-import ShareViewer from "./viewer";
-export default async function SharePage({params}:{params:Promise<{id:string}>}){return <ShareViewer id={(await params).id}/>}
+import ShareViewerClient from "./viewer-client";
+
+export default async function SharePage({ params }: { params: Promise<{ id: string }> }) {
+  return <ShareViewerClient id={(await params).id} />;
+}
