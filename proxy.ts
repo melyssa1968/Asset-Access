@@ -18,10 +18,9 @@ export default clerkMiddleware(
   },
   {
     authorizedParties: ["https://racepoint.ai"],
-    frontendApiProxy: { enabled: true, path: "/asset-access/__clerk" },
   },
 );
 
 export const config = {
-  matcher: ["/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)", "/(api|trpc)(.*)", "/asset-access/__clerk/(.*)"],
+  matcher: ["/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)", "/(api|trpc)(.*)"],
 };
