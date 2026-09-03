@@ -7,6 +7,7 @@ const isPublicRoute = createRouteMatcher([
   "/share(.*)",
   "/api/public(.*)",
   "/api/__clerk(.*)",
+  "/api/clerk-assets(.*)",
   "/sign-in(.*)",
   "/sign-up(.*)",
 ]);
