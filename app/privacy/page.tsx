@@ -14,7 +14,7 @@ export default function PrivacyPage() {
   return (
     <main style={{ minHeight: "100vh", background: "#f6f7fb", padding: "48px 20px" }}>
       <article style={{ width: "min(760px, 100%)", margin: "0 auto", background: "#fff", border: "1px solid #e8e9ef", borderRadius: 18, padding: "clamp(28px, 5vw, 56px)", boxShadow: "0 18px 48px rgba(31,31,60,.08)" }}>
-        <Link href="/asset-access/sign-in" style={{ color: "#6556e8", textDecoration: "none", fontWeight: 700 }}>← Asset Access</Link>
+        <Link href="/sign-in" style={{ color: "#6556e8", textDecoration: "none", fontWeight: 700 }}>← Asset Access</Link>
         <h1 style={{ fontSize: 38, letterSpacing: "-.04em", margin: "26px 0 8px" }}>Privacy Policy</h1>
         <p style={{ ...copy, fontSize: 14 }}>Last updated: September 3, 2026</p>
         <p style={copy}>Asset Access is operated by Racepoint (“Racepoint,” “we,” “us,” or “our”). This policy explains how we handle information when people use Asset Access.</p>
@@ -60,8 +60,8 @@ export default function PrivacyPage() {
         </section>
 
         <footer style={{ marginTop: 38, paddingTop: 22, borderTop: "1px solid #e8e9ef", display: "flex", gap: 18, fontSize: 14 }}>
-          <Link href="/asset-access/terms" style={{ color: "#6556e8" }}>Terms of Service</Link>
-          <Link href="/asset-access/sign-in" style={{ color: "#6556e8" }}>Sign in</Link>
+          <Link href="/terms" style={{ color: "#6556e8" }}>Terms of Service</Link>
+          <Link href="/sign-in" style={{ color: "#6556e8" }}>Sign in</Link>
         </footer>
       </article>
     </main>

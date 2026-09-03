@@ -8,8 +8,8 @@ export default function Page() {
         <SignIn routing="path" path="/asset-access/sign-in" forceRedirectUrl="/asset-access" signUpUrl="/asset-access/sign-up" />
       </div>
       <footer style={{ display: "flex", justifyContent: "center", gap: 20, padding: "18px", fontSize: 13, color: "#6f7487" }}>
-        <Link href="/asset-access/privacy" style={{ color: "#6556e8" }}>Privacy Policy</Link>
-        <Link href="/asset-access/terms" style={{ color: "#6556e8" }}>Terms of Service</Link>
+        <Link href="/privacy" style={{ color: "#6556e8" }}>Privacy Policy</Link>
+        <Link href="/terms" style={{ color: "#6556e8" }}>Terms of Service</Link>
       </footer>
     </main>
   );
