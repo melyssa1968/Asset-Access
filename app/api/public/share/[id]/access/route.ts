@@ -1,7 +1,8 @@
 import { after } from "next/server";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../../../db";
 import { visitorSessions, visits } from "../../../../../../db/schema";
-import { cookieName, getActiveShare } from "../../../../../../lib/share";
+import { cookieName, getActiveShare, readCookie } from "../../../../../../lib/share";
 import { sendAssetAccessEmail } from "../../../../../../lib/email";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -18,6 +19,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const country = request.headers.get("x-vercel-ip-country");
   const userAgent = (request.headers.get("user-agent") || "").slice(0, 500);
   const db = await getDb();
+  const existingSessionId = readCookie(request, cookieName(id));
+  if (existingSessionId) {
+    const existing = await db.select().from(visitorSessions)
+      .where(and(eq(visitorSessions.id, existingSessionId), eq(visitorSessions.linkId, id))).limit(1);
+    if (existing[0] && (!row.link.requireEmail || existing[0].visitorEmail)) {
+      await db.update(visitorSessions).set({ lastSeenAt: now }).where(eq(visitorSessions.id, existingSessionId));
+      return Response.json({ ok: true, fileUrl: `/asset-access/api/public/share/${id}/file`, downloadAllowed: row.link.allowDownload });
+    }
+  }
   await db.insert(visitorSessions).values({ id: sessionId, linkId: id, visitorEmail: email, country, userAgent, createdAt: now, lastSeenAt: now });
   await db.insert(visits).values({ id: crypto.randomUUID(), linkId: id, sessionId, visitorEmail: email, event: "open", createdAt: now });
   after(() => sendAssetAccessEmail({ ownerId: row.asset.ownerEmail, assetName: row.asset.name, linkLabel: row.link.label, visitorEmail: email, country, accessedAt: now }));

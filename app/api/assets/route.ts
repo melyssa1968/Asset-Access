@@ -1,6 +1,6 @@
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { assets, shareLinks, visitorSessions, visits } from "../../../db/schema";
+import { assets, shareLinks, visitorSessions } from "../../../db/schema";
 import { requireTenant } from "../../../lib/auth";
 
 const allowed = [
@@ -17,12 +17,11 @@ export async function GET() {
     const rows = await db.select({
       id: assets.id, name: assets.name, fileName: assets.fileName, size: assets.size,
       contentType: assets.contentType, createdAt: assets.createdAt,
-      views: sql<number>`count(distinct ${visits.id})`,
+      views: sql<number>`count(distinct ${visitorSessions.id})`,
       visitors: sql<number>`count(distinct ${visitorSessions.id})`,
       links: sql<number>`count(distinct ${shareLinks.id})`,
     }).from(assets)
       .leftJoin(shareLinks, eq(shareLinks.assetId, assets.id))
-      .leftJoin(visits, eq(visits.linkId, shareLinks.id))
       .leftJoin(visitorSessions, eq(visitorSessions.linkId, shareLinks.id))
       .where(and(eq(assets.tenantId, tenantId), isNull(assets.archivedAt)))
       .groupBy(assets.id).orderBy(desc(assets.createdAt));

@@ -10,11 +10,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { tenantId } = await requireTenant();
     const { id } = await params;
     const body = await request.json() as { name?: string; archive?: boolean };
+    const updates: { name?: string; archivedAt?: Date } = {};
+    if (body.name !== undefined) {
+      const name = body.name.trim();
+      if (!name) return Response.json({ error: "Enter an asset title" }, { status: 400 });
+      if (name.length > 160) return Response.json({ error: "Asset titles must be 160 characters or fewer" }, { status: 400 });
+      updates.name = name;
+    }
+    if (body.archive) updates.archivedAt = new Date();
+    if (!Object.keys(updates).length) return Response.json({ error: "No changes supplied" }, { status: 400 });
     const db = await getDb();
-    const rows = await db.update(assets).set({
-      ...(body.name ? { name: body.name.trim() } : {}),
-      ...(body.archive ? { archivedAt: new Date() } : {}),
-    }).where(and(eq(assets.id, id), eq(assets.tenantId, tenantId))).returning({ id: assets.id });
+    const rows = await db.update(assets).set(updates)
+      .where(and(eq(assets.id, id), eq(assets.tenantId, tenantId))).returning({ id: assets.id });
     return rows.length ? Response.json({ ok: true }) : new Response("Not found", { status: 404 });
   } catch (error) {
     if (error instanceof Response) return error;
