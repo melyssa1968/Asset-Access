@@ -14,6 +14,10 @@ export default function AssetClerkProvider({
       proxyUrl="https://racepoint.ai/asset-access/api/__clerk"
       signInUrl="/asset-access/sign-in"
       signUpUrl="/asset-access/sign-up"
+      taskUrls={{
+        "choose-organization":
+          "/asset-access/session-tasks/choose-organization",
+      }}
     >
       {children}
     </ClerkProvider>

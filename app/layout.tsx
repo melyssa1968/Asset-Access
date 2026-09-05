@@ -7,12 +7,14 @@ export const metadata: Metadata = {
   description: "Share sales assets and see exactly how prospects engage.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <AssetClerkProvider>
-      <html lang="en">
-        <body>{children}</body>
-      </html>
-    </AssetClerkProvider>
+    <html lang="en">
+      <body>
+        <AssetClerkProvider>{children}</AssetClerkProvider>
+      </body>
+    </html>
   );
 }
