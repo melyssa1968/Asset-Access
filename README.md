@@ -4,6 +4,12 @@ A clean full-stack starter running on
 [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
 Drizzle support.
 
+## Production authentication
+
+The production Clerk instance uses `racepoint.ai` as its primary domain and the frontend API proxy at `https://racepoint.ai/asset-access/api/__clerk`.
+
+The application route in `app/api/%5F%5Fclerk/[[...path]]/route.ts` forwards requests to `https://clerk.racepoint.ai` and supplies Clerk's required proxy headers. The Clerk dashboard domain must have the same proxy URL configured. After either side changes, verify that `/asset-access/api/__clerk/v1/environment` returns a successful Clerk environment response before testing sign-in.
+
 ## Prerequisites
 
 - Node.js `>=22.13.0`
