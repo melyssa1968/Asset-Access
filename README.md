@@ -8,7 +8,7 @@ Drizzle support.
 
 The production Clerk instance uses `racepoint.ai` as its primary domain and the frontend API proxy at `https://racepoint.ai/asset-access/api/__clerk`.
 
-The application route in `app/api/%5F%5Fclerk/[[...path]]/route.ts` forwards requests to `https://clerk.racepoint.ai` and supplies Clerk's required proxy headers. The Clerk dashboard domain must have the same proxy URL configured. After either side changes, verify that `/asset-access/api/__clerk/v1/environment` returns a successful Clerk environment response before testing sign-in.
+The application route in `app/api/%5F%5Fclerk/[[...path]]/route.ts` delegates to Clerk's `createFrontendApiProxyHandlers()` helper. The helper preserves the body, headers, client IP, and redirect behavior required by Clerk's security checks. The Clerk dashboard domain must have the same proxy URL configured. After either side changes, verify that `/asset-access/api/__clerk/v1/environment` returns a successful Clerk environment response before testing sign-in or sign-up.
 
 ## Prerequisites
 
@@ -115,5 +115,6 @@ The timeout defaults can be overridden for a controlled canary with `SITES_INSTA
 
 ## Learn More
 
+- [Clerk frontend API proxy](https://clerk.com/docs/guides/dashboard/dns-domains/proxy-fapi)
 - [vinext Documentation](https://github.com/cloudflare/vinext)
 - [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
