@@ -131,8 +131,9 @@ export default function ShareViewer({ id }: { id: string }) {
       const body = await response.json();
       if (!response.ok) throw new Error(body.error);
       setMeta(body);
-      setLoading(false);
+      // Keep anonymous links in the loading state until their access session is ready.
       if (!body.link.requireEmail) await grant("");
+      setLoading(false);
     }).catch(cause => { setError(cause.message); setLoading(false); });
   }, [id]);
   async function grant(value: string) {
@@ -146,9 +147,9 @@ export default function ShareViewer({ id }: { id: string }) {
   function download() { track(id, "download", 0, 0); }
 
   if (loading) return <main className="viewer-shell"><div className="viewer-card">Preparing document…</div></main>;
-  if (error && !meta) return <main className="viewer-shell"><div className="viewer-card unavailable"><LockKeyhole /><h1>Link unavailable</h1><p>{error}</p></div></main>;
+  if (error && (!meta || !meta.link.requireEmail)) return <main className="viewer-shell"><div className="viewer-card unavailable"><LockKeyhole /><h1>Link unavailable</h1><p>{error}</p></div></main>;
   if (!meta) return null;
-  if (!granted) return <main className="viewer-shell"><div className="viewer-brand"><span>A</span>Assetly</div><div className="gate-card"><div className="doc-badge"><FileText /></div><p className="eyebrow">Shared with you</p><h1>{meta.asset.name}</h1><p>Enter your work email to view this asset.</p><form onSubmit={submit}><label htmlFor="visitor-email">Work email</label><input id="visitor-email" type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="you@company.com" required /><button type="submit">View asset</button>{error && <span className="form-error">{error}</span>}</form><div className="privacy"><ShieldCheck />Your email is shared only with the asset owner.</div></div></main>;
+  if (!granted && meta.link.requireEmail) return <main className="viewer-shell"><div className="viewer-brand"><span>A</span>Assetly</div><div className="gate-card"><div className="doc-badge"><FileText /></div><p className="eyebrow">Shared with you</p><h1>{meta.asset.name}</h1><p>Enter your work email to view this asset.</p><form onSubmit={submit}><label htmlFor="visitor-email">Work email</label><input id="visitor-email" type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="you@company.com" required /><button type="submit">View asset</button>{error && <span className="form-error">{error}</span>}</form><div className="privacy"><ShieldCheck />Your email is shared only with the asset owner.</div></div></main>;
 
   const pdf = meta.asset.contentType === "application/pdf";
   const video = meta.asset.contentType.startsWith("video/");
