@@ -3,17 +3,29 @@ import { getDb } from "../../../db";
 import { assets, shareLinks, visitorSessions, visits } from "../../../db/schema";
 import { requireTenant } from "../../../lib/auth";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const { tenantId } = await requireTenant();
     const db = await getDb();
+    const linkId = new URL(request.url).searchParams.get("linkId");
+    const scope = and(
+      eq(assets.tenantId, tenantId),
+      isNull(assets.archivedAt),
+      linkId ? eq(shareLinks.id, linkId) : undefined,
+    );
+    if (linkId) {
+      const owned = await db.select({ id: shareLinks.id }).from(shareLinks)
+        .innerJoin(assets, eq(assets.id, shareLinks.assetId))
+        .where(scope).limit(1);
+      if (!owned.length) return Response.json({ error: "Link not found" }, { status: 404 });
+    }
     const counts = await db.select({
       views: sql<number>`count(distinct ${visitorSessions.id})`,
       visitors: sql<number>`count(distinct coalesce(${visitorSessions.visitorEmail}, ${visitorSessions.id}))`,
     }).from(assets)
       .leftJoin(shareLinks, eq(shareLinks.assetId, assets.id))
       .leftJoin(visitorSessions, eq(visitorSessions.linkId, shareLinks.id))
-      .where(and(eq(assets.tenantId, tenantId), isNull(assets.archivedAt)));
+      .where(scope);
 
     const engagement = await db.select({
       sessionId: visits.sessionId,
@@ -24,7 +36,7 @@ export async function GET() {
     }).from(visits)
       .innerJoin(shareLinks, eq(shareLinks.id, visits.linkId))
       .innerJoin(assets, eq(assets.id, shareLinks.assetId))
-      .where(and(eq(assets.tenantId, tenantId), isNull(assets.archivedAt)))
+      .where(scope)
       .groupBy(visits.sessionId);
 
     const measurable = engagement.filter(row => Number(row.durationMs) > 0);
@@ -44,7 +56,7 @@ export async function GET() {
     }).from(visitorSessions)
       .innerJoin(shareLinks, eq(shareLinks.id, visitorSessions.linkId))
       .innerJoin(assets, eq(assets.id, shareLinks.assetId))
-      .where(and(eq(assets.tenantId, tenantId), isNull(assets.archivedAt)))
+      .where(scope)
       .orderBy(desc(visitorSessions.lastSeenAt)).limit(50);
 
     const engagementBySession = new Map(engagement.filter(row => row.sessionId).map(row => [row.sessionId!, row]));
@@ -76,3 +88,4 @@ export async function GET() {
     return Response.json({ error: "Could not load analytics" }, { status: 500 });
   }
 }
+
